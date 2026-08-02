@@ -56,7 +56,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     }
     
     func initWebView() {
-        sharedWebView = createWebView(container: webviewView, WKSMH: self, WKND: self, NSO: self, VC: self)
+        sharedWebView = createWebView(container: webviewView, WKSMH: self, WKND: self)
         webviewView.addSubview(sharedWebView);
         
         sharedWebView.uiDelegate = self;
@@ -141,7 +141,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
             loadRootUrl(cachePolicy: .useProtocolCachePolicy);
 
         case LoadingMode.forceCache:
-            loadRootUrl(cachePolicy: .useProtocolCachePolicy);
+            loadRootUrl(cachePolicy: .returnCacheDataElseLoad);
         }
 
         self.loadingMode = loadingMode

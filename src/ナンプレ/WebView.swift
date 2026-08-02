@@ -4,7 +4,7 @@ import AuthenticationServices
 import SafariServices
 
 
-func createWebView(container: UIView, WKSMH: WKScriptMessageHandler, WKND: WKNavigationDelegate, NSO: NSObject, VC: ViewController) -> WKWebView{
+func createWebView(container: UIView, WKSMH: WKScriptMessageHandler, WKND: WKNavigationDelegate) -> WKWebView{
 
     let config = WKWebViewConfiguration()
     let userContentController = WKUserContentController()
@@ -39,8 +39,6 @@ func createWebView(container: UIView, WKSMH: WKScriptMessageHandler, WKND: WKNav
     webView.configuration.applicationNameForUserAgent = "Safari/604.1"
     webView.customUserAgent = "Mozilla/5.0 (\(deviceModel); CPU \(deviceModel) OS \(osVersion.replacingOccurrences(of: ".", with: "_")) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(osVersion) Mobile/15E148 Safari/604.1 PWAShell"
 
-    webView.addObserver(NSO, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: NSKeyValueObservingOptions.new, context: nil)
-    
     #if DEBUG
     if #available(iOS 16.4, *) {
         webView.isInspectable = true
@@ -139,7 +137,7 @@ extension ViewController: WKUIDelegate, WKDownloadDelegate {
                     return
                 }
                 if (navigationAction.navigationType == .other &&
-                    navigationAction.value(forKey: "syntheticClickType") as! Int == 0 &&
+                    (navigationAction.value(forKey: "syntheticClickType") as? Int) == 0 &&
                     (navigationAction.targetFrame != nil) &&
                     // no error here, fake warning
                     (navigationAction.sourceFrame != nil)
