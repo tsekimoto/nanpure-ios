@@ -43,7 +43,7 @@ jobs:
         run: |
           xcodebuild archive \
             -workspace "src/ナンプレ.xcworkspace" \
-            -scheme "ナンプレ" \
+            -scheme "Nanpure" \
             -configuration Release \
             -archivePath "$RUNNER_TEMP/app.xcarchive" \
             -destination "generic/platform=iOS"

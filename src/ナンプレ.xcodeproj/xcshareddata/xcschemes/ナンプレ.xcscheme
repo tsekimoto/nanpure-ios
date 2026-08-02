@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "CD89F888237E9D9200C436A1"
-               BuildableName = "ナンプレ.app"
-               BlueprintName = "ナンプレ"
+               BuildableName = "Nanpure.app"
+               BlueprintName = "Nanpure"
                ReferencedContainer = "container:ナンプレ.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,8 +45,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CD89F888237E9D9200C436A1"
-            BuildableName = "ナンプレ.app"
-            BlueprintName = "ナンプレ"
+            BuildableName = "Nanpure.app"
+            BlueprintName = "Nanpure"
             ReferencedContainer = "container:ナンプレ.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,8 +62,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CD89F888237E9D9200C436A1"
-            BuildableName = "ナンプレ.app"
-            BlueprintName = "ナンプレ"
+            BuildableName = "Nanpure.app"
+            BlueprintName = "Nanpure"
             ReferencedContainer = "container:ナンプレ.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
