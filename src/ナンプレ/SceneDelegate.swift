@@ -48,7 +48,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
             if let url = comps?.url {
                 // Handle it inside our web view in a SPA-friendly way.
-                ナンプレ.webView.evaluateJavaScript("location.href = '\(url)'")
+                sharedWebView.evaluateJavaScript("location.href = '\(url)'")
             }
         }
     }
@@ -66,7 +66,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
 
         // Handle it inside our web view in a SPA-friendly way.
-        ナンプレ.webView.evaluateJavaScript("location.href = '\(universalLink)'")
+        sharedWebView.evaluateJavaScript("location.href = '\(universalLink)'")
     }
 
     // This function is called if our app is already loaded and the user activates the app via shortcut
@@ -74,7 +74,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                      performActionFor shortcutItem: UIApplicationShortcutItem,
                      completionHandler: @escaping (Bool) -> Void) {
         if let shortcutUrl = URL.init(string: shortcutItem.type) {
-            ナンプレ.webView.evaluateJavaScript("location.href = '\(shortcutUrl)'");
+            sharedWebView.evaluateJavaScript("location.href = '\(shortcutUrl)'");
         }
     }
 
