@@ -45,6 +45,7 @@ jobs:
             -workspace "src/ナンプレ.xcworkspace" \
             -scheme "Nanpure" \
             -configuration Release \
+            CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
             -archivePath "$RUNNER_TEMP/app.xcarchive" \
             -destination "generic/platform=iOS"
 
