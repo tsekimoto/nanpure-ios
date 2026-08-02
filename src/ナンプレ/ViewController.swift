@@ -48,32 +48,32 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        webView.frame = calcWebviewFrame(webviewView: webviewView, toolbarView: nil)
+        ナンプレ.webView.frame = calcWebviewFrame(webviewView: webviewView, toolbarView: nil)
     }
     
     @objc func keyboardWillHide(_ notification: NSNotification) {
-        webView.setNeedsLayout()
+        ナンプレ.webView.setNeedsLayout()
     }
     
     func initWebView() {
-        webView = createWebView(container: webviewView, WKSMH: self, WKND: self, NSO: self, VC: self)
-        webviewView.addSubview(webView);
+        ナンプレ.webView = createWebView(container: webviewView, WKSMH: self, WKND: self, NSO: self, VC: self)
+        webviewView.addSubview(ナンプレ.webView);
         
-        webView.uiDelegate = self;
+        ナンプレ.webView.uiDelegate = self;
         
-        webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
+        ナンプレ.webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
 
         if(pullToRefresh){
             let refreshControl = UIRefreshControl()
             refreshControl.addTarget(self, action: #selector(refreshWebView(_:)), for: UIControl.Event.valueChanged)
-            webView.scrollView.addSubview(refreshControl)
-            webView.scrollView.bounces = true
+            ナンプレ.webView.scrollView.addSubview(refreshControl)
+            ナンプレ.webView.scrollView.bounces = true
         }
 
         if #available(iOS 15.0, *), adaptiveUIStyle {
-            themeObservation = webView.observe(\.themeColor) { [unowned self] webView, _ in
-                let backgroundColor = webView.underPageBackgroundColor;
-                let themeColor = webView.themeColor;
+            themeObservation = ナンプレ.webView.observe(\.themeColor) { [unowned self] webView, _ in
+                let backgroundColor = ナンプレ.webView.underPageBackgroundColor;
+                let themeColor = ナンプレ.webView.themeColor;
                 currentWebViewTheme = themeColor?.isLight() ?? backgroundColor?.isLight() ?? true ? .light : .dark
                 self.overrideUIStyle()
                 view.backgroundColor = themeColor ?? backgroundColor;
@@ -82,7 +82,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     }
 
     @objc func refreshWebView(_ sender: UIRefreshControl) {
-        webView?.reload()
+        ナンプレ.webView?.reload()
         sender.endRefreshing()
     }
 
@@ -113,7 +113,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     
     func overrideUIStyle(toDefault: Bool = false) {
         if #available(iOS 15.0, *), adaptiveUIStyle {
-            if (((htmlIsLoaded && !webView.isHidden) || toDefault) && self.currentWebViewTheme != .unspecified) {
+            if (((htmlIsLoaded && !ナンプレ.webView.isHidden) || toDefault) && self.currentWebViewTheme != .unspecified) {
                 UIApplication
                     .shared
                     .connectedScenes
@@ -130,7 +130,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     }
     
     @objc func loadRootUrl(cachePolicy: NSURLRequest.CachePolicy = .useProtocolCachePolicy) {
-        webView.load(URLRequest(url: SceneDelegate.universalLinkToLaunch ?? SceneDelegate.shortcutLinkToLaunch ?? rootUrl, cachePolicy: cachePolicy))
+        ナンプレ.webView.load(URLRequest(url: SceneDelegate.universalLinkToLaunch ?? SceneDelegate.shortcutLinkToLaunch ?? rootUrl, cachePolicy: cachePolicy))
     }
     
     func reloadWebview(
@@ -154,7 +154,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         self.animateConnectionProblem(false)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            webView.isHidden = false
+            ナンプレ.webView.isHidden = false
             self.loadingView.isHidden = true
            
             self.setProgress(0.0, false)
@@ -193,10 +193,10 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
 
         if (keyPath == #keyPath(WKWebView.estimatedProgress) &&
-                webView.isLoading &&
+                ナンプレ.webView.isLoading &&
                 !self.loadingView.isHidden &&
                 !self.htmlIsLoaded) {
-                    var progress = Float(webView.estimatedProgress);
+                    var progress = Float(ナンプレ.webView.estimatedProgress);
                     
                     if (progress >= 0.8) { progress = 1.0; };
                     if (progress >= 0.3) { self.animateConnectionProblem(false); }
@@ -229,7 +229,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     }
         
     deinit {
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
+        ナンプレ.webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
     }
 }
 
@@ -258,7 +258,7 @@ extension UIColor {
 extension ViewController: WKScriptMessageHandler {
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "print" {
-            printView(webView: webView)
+            printView(webView: ナンプレ.webView)
         }
         if message.name == "push-subscribe" {
             handleSubscribeTouch(message: message)
