@@ -43,11 +43,7 @@ jobs:
             -scheme "ナンプレ" \
             -configuration Release \
             -archivePath "$RUNNER_TEMP/app.xcarchive" \
-            -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="nanpure distribution" \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM=4QLQBKXV72
+            -destination "generic/platform=iOS"
 
       - name: Export ipa
         run: |
