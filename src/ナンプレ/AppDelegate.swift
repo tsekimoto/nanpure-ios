@@ -1,4 +1,5 @@
 import UIKit
+import UserNotifications
 import FirebaseCore
 import FirebaseMessaging
 
@@ -105,7 +106,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         sendPushToWebView(userInfo: userInfo)
 
         // Change this to your preferred presentation option
-        completionHandler([[.banner, .list, .sound]])
+        completionHandler([.banner, .list, .sound])
       }
 
       func userNotificationCenter(_ center: UNUserNotificationCenter,

@@ -1,4 +1,5 @@
 import WebKit
+import UserNotifications
 import FirebaseMessaging
 
 class SubscribeMessage {
