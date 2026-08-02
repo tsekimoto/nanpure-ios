@@ -38,6 +38,9 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = .white
+        loadingView.backgroundColor = .white
+        webviewView.backgroundColor = .white
         initWebView()
         initToolbarView()
         loadRootUrl()
@@ -60,6 +63,11 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         webviewView.addSubview(sharedWebView);
         
         sharedWebView.uiDelegate = self;
+        sharedWebView.backgroundColor = .white
+        sharedWebView.scrollView.backgroundColor = .white
+        if #available(iOS 15.0, *) {
+            sharedWebView.underPageBackgroundColor = .white
+        }
         
         sharedWebView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
 
