@@ -6,7 +6,7 @@ func printView(webView: WKWebView){
 
     let printInfo = UIPrintInfo(dictionary:nil)
     printInfo.outputType = UIPrintInfo.OutputType.general
-    printInfo.jobName = (webView.url?.absoluteString)!
+    printInfo.jobName = webView.url?.absoluteString ?? "Nanpure"
     printInfo.duplex = UIPrintInfo.Duplex.none
     printInfo.orientation = UIPrintInfo.Orientation.portrait
 

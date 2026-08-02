@@ -7,37 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		25D3517F267A48E0002E5DC0 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 25D3517E267A48E0002E5DC0 /* GoogleService-Info.plist */; };
 		595F23A525CEFBFE0053416C /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595F239A25CEFBFD0053416C /* Settings.swift */; };
-		595F23A625CEFBFE0053416C /* Entitlements in Resources */ = {isa = PBXBuildFile; fileRef = 595F239B25CEFBFD0053416C /* Entitlements */; };
 		595F23A725CEFBFE0053416C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 595F239C25CEFBFD0053416C /* Assets.xcassets */; };
 		595F23A825CEFBFE0053416C /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595F239D25CEFBFD0053416C /* SceneDelegate.swift */; };
-		595F23AA25CEFBFE0053416C /* PushNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595F239F25CEFBFE0053416C /* PushNotifications.swift */; };
 		595F23AC25CEFBFE0053416C /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595F23A125CEFBFE0053416C /* ViewController.swift */; };
 		595F23AD25CEFBFE0053416C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595F23A225CEFBFE0053416C /* AppDelegate.swift */; };
 		595F23AE25CEFBFE0053416C /* Printer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595F23A325CEFBFE0053416C /* Printer.swift */; };
 		595F23AF25CEFBFE0053416C /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595F23A425CEFBFE0053416C /* WebView.swift */; };
 		CDC0FE292388222C002C8D56 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CDC0FE252388222B002C8D56 /* Main.storyboard */; };
 		CDC0FE2A2388222C002C8D56 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CDC0FE272388222B002C8D56 /* LaunchScreen.storyboard */; };
-		E1E260C850014D6B34B487B0 /* Pods_ナンプレ.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE9D7FFB2FBE6EEBCA807B6A /* Pods_ナンプレ.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		25D3517E267A48E0002E5DC0 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "ナンプレ/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		4C1C2162A8048FDF52B2A9D0 /* Pods-ナンプレ.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ナンプレ.release.xcconfig"; path = "Target Support Files/Pods-ナンプレ/Pods-ナンプレ.release.xcconfig"; sourceTree = "<group>"; };
 		59333BAA25CFF706003392A4 /* ナンプレ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ナンプレ.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		595F239A25CEFBFD0053416C /* Settings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Settings.swift; path = "ナンプレ/Settings.swift"; sourceTree = "<group>"; };
-		595F239B25CEFBFD0053416C /* Entitlements */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Entitlements; path = "ナンプレ/Entitlements"; sourceTree = "<group>"; };
 		595F239C25CEFBFD0053416C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = "ナンプレ/Assets.xcassets"; sourceTree = "<group>"; };
 		595F239D25CEFBFD0053416C /* SceneDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SceneDelegate.swift; path = "ナンプレ/SceneDelegate.swift"; sourceTree = "<group>"; };
-		595F239F25CEFBFE0053416C /* PushNotifications.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PushNotifications.swift; path = "ナンプレ/PushNotifications.swift"; sourceTree = "<group>"; };
 		595F23A025CEFBFE0053416C /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = "ナンプレ/Info.plist"; sourceTree = "<group>"; };
 		595F23A125CEFBFE0053416C /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ViewController.swift; path = "ナンプレ/ViewController.swift"; sourceTree = "<group>"; };
 		595F23A225CEFBFE0053416C /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = "ナンプレ/AppDelegate.swift"; sourceTree = "<group>"; };
 		595F23A325CEFBFE0053416C /* Printer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Printer.swift; path = "ナンプレ/Printer.swift"; sourceTree = "<group>"; };
 		595F23A425CEFBFE0053416C /* WebView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WebView.swift; path = "ナンプレ/WebView.swift"; sourceTree = "<group>"; };
-		BE9D7FFB2FBE6EEBCA807B6A /* Pods_ナンプレ.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = "Pods_ナンプレ.framework"; sourceTree = BUILT_PRODUCTS_DIR; };
-		BEE8E5C625AE96C07F8AADED /* Pods-ナンプレ.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ナンプレ.debug.xcconfig"; path = "Target Support Files/Pods-ナンプレ/Pods-ナンプレ.debug.xcconfig"; sourceTree = "<group>"; };
 		CDC0FE262388222B002C8D56 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = "ナンプレ/Base.lproj/Main.storyboard"; sourceTree = "<group>"; };
 		CDC0FE282388222B002C8D56 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = "ナンプレ/Base.lproj/LaunchScreen.storyboard"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -47,48 +37,25 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E1E260C850014D6B34B487B0 /* Pods_ナンプレ.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		30FCACC6A7BF53CD6D9CF6C0 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				BEE8E5C625AE96C07F8AADED /* Pods-ナンプレ.debug.xcconfig */,
-				4C1C2162A8048FDF52B2A9D0 /* Pods-ナンプレ.release.xcconfig */,
-			);
-			path = Pods;
-			sourceTree = "<group>";
-		};
-		90E46E861CB86F5FAF46BED9 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				BE9D7FFB2FBE6EEBCA807B6A /* Pods_ナンプレ.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		CD89F880237E9D9200C436A1 = {
 			isa = PBXGroup;
 			children = (
 				595F23A225CEFBFE0053416C /* AppDelegate.swift */,
 				595F239C25CEFBFD0053416C /* Assets.xcassets */,
-				595F239B25CEFBFD0053416C /* Entitlements */,
 				595F23A025CEFBFE0053416C /* Info.plist */,
-				25D3517E267A48E0002E5DC0 /* GoogleService-Info.plist */,
 				595F23A325CEFBFE0053416C /* Printer.swift */,
-				595F239F25CEFBFE0053416C /* PushNotifications.swift */,
 				595F239D25CEFBFD0053416C /* SceneDelegate.swift */,
 				595F239A25CEFBFD0053416C /* Settings.swift */,
 				595F23A125CEFBFE0053416C /* ViewController.swift */,
 				CDC0FE272388222B002C8D56 /* LaunchScreen.storyboard */,
 				CDC0FE252388222B002C8D56 /* Main.storyboard */,
 				595F23A425CEFBFE0053416C /* WebView.swift */,
-				30FCACC6A7BF53CD6D9CF6C0 /* Pods */,
-				90E46E861CB86F5FAF46BED9 /* Frameworks */,
 				59333BAA25CFF706003392A4 /* ナンプレ.app */,
 			);
 			sourceTree = "<group>";
@@ -100,11 +67,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = CD89F89D237E9D9300C436A1 /* Build configuration list for PBXNativeTarget "ナンプレ" */;
 			buildPhases = (
-				E07DC62CDB59F65280F7057D /* [CP] Check Pods Manifest.lock */,
 				CD89F885237E9D9200C436A1 /* Sources */,
 				CD89F886237E9D9200C436A1 /* Frameworks */,
 				CD89F887237E9D9200C436A1 /* Resources */,
-				592CB04773CB45D6CE5DF117 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -154,57 +119,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				595F23A625CEFBFE0053416C /* Entitlements in Resources */,
 				CDC0FE292388222C002C8D56 /* Main.storyboard in Resources */,
 				CDC0FE2A2388222C002C8D56 /* LaunchScreen.storyboard in Resources */,
 				595F23A725CEFBFE0053416C /* Assets.xcassets in Resources */,
-				25D3517F267A48E0002E5DC0 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		592CB04773CB45D6CE5DF117 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ナンプレ/Pods-ナンプレ-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ナンプレ/Pods-ナンプレ-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ナンプレ/Pods-ナンプレ-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		E07DC62CDB59F65280F7057D /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-ナンプレ-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		CD89F885237E9D9200C436A1 /* Sources */ = {
@@ -216,7 +137,6 @@
 				595F23A525CEFBFE0053416C /* Settings.swift in Sources */,
 				595F23AE25CEFBFE0053416C /* Printer.swift in Sources */,
 				595F23AC25CEFBFE0053416C /* ViewController.swift in Sources */,
-				595F23AA25CEFBFE0053416C /* PushNotifications.swift in Sources */,
 				595F23AF25CEFBFE0053416C /* WebView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -301,7 +221,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				TARGETED_DEVICE_FAMILY = "1,2,6";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = "$(ARCHS_STANDARD)";
 			};
 			name = Debug;
@@ -357,7 +277,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				TARGETED_DEVICE_FAMILY = "1,2,6";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 				VALID_ARCHS = "$(ARCHS_STANDARD)";
 			};
@@ -365,11 +285,9 @@
 		};
 		CD89F89E237E9D9300C436A1 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BEE8E5C625AE96C07F8AADED /* Pods-ナンプレ.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = NO;
-				CODE_SIGN_ENTITLEMENTS = "ナンプレ/Entitlements/Entitlements.plist";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -389,17 +307,15 @@
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,6";
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
 		CD89F89F237E9D9300C436A1 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4C1C2162A8048FDF52B2A9D0 /* Pods-ナンプレ.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = NO;
-				CODE_SIGN_ENTITLEMENTS = "ナンプレ/Entitlements/Entitlements.plist";
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
@@ -419,7 +335,7 @@
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,6";
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

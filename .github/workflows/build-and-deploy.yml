@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '.github/workflows/build-and-deploy.yml'
+      - 'src/**'
 
 jobs:
   build:
@@ -35,14 +38,10 @@ jobs:
           mkdir -p "$PROFILE_DIR"
           echo "$PROFILE_BASE64" | base64 --decode > "$PROFILE_DIR/nanpure.mobileprovision"
 
-      - name: Install CocoaPods dependencies
-        working-directory: src
-        run: pod install --repo-update
-
       - name: Archive app
         run: |
           xcodebuild archive \
-            -workspace "src/ナンプレ.xcworkspace" \
+            -project "src/ナンプレ.xcodeproj" \
             -scheme "Nanpure" \
             -configuration Release \
             CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
