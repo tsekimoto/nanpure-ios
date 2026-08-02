@@ -32,10 +32,14 @@ jobs:
           mkdir -p "$PROFILE_DIR"
           echo "$PROFILE_BASE64" | base64 --decode > "$PROFILE_DIR/nanpure.mobileprovision"
 
+      - name: Install CocoaPods dependencies
+        working-directory: src
+        run: pod install --repo-update
+
       - name: Archive app
         run: |
           xcodebuild archive \
-            -project "src/ナンプレ.xcodeproj" \
+            -workspace "src/ナンプレ.xcworkspace" \
             -scheme "ナンプレ" \
             -configuration Release \
             -archivePath "$RUNNER_TEMP/app.xcarchive" \
