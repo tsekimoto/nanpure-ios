@@ -141,12 +141,15 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         webviewView.addSubview(toolbarView)
     }
 
-    // Persistent banner ad pinned to the bottom of the puzzle screen.
+    // Persistent banner ad pinned to the bottom of the puzzle (game) screen
+    // only. Hidden on every other screen (home/list/daily) — see
+    // setBannerVisible, driven by the web content's "screen" messages.
     // The webview's own frame (see calcWebviewFrame) is shrunk by
     // bannerAdHeight so the banner never overlaps gameplay UI.
     func initBannerAd() {
         bannerView = AdManager.shared.makeBannerView(rootViewController: self, width: webviewView.frame.width)
         bannerView.delegate = self
+        bannerView.isHidden = true
         webviewView.addSubview(bannerView)
         layoutBannerAd()
     }
@@ -160,7 +163,14 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
             width: bannerView.frame.width,
             height: bannerView.frame.height
         )
-        bannerAdHeight = bannerView.frame.height + bottomInset
+        bannerAdHeight = bannerView.isHidden ? 0 : bannerView.frame.height + bottomInset
+    }
+
+    func setBannerVisible(_ visible: Bool) {
+        guard let bannerView = bannerView, bannerView.isHidden == visible else { return }
+        bannerView.isHidden = !visible
+        layoutBannerAd()
+        sharedWebView.setNeedsLayout()
     }
     
     @objc func loadRootUrl(cachePolicy: NSURLRequest.CachePolicy = .useProtocolCachePolicy) {
@@ -297,6 +307,17 @@ extension ViewController: WKScriptMessageHandler {
         else if message.name == "nativeAd" {
             handleNativeAdMessage(message.body)
         }
+        else if message.name == "screen" {
+            handleScreenMessage(message.body)
+        }
+  }
+
+  // Shows the banner ad only while the web content is on the "game"
+  // (puzzle-playing) screen, per: window.webkit.messageHandlers.screen.postMessage({screen: "game"})
+  func handleScreenMessage(_ body: Any) {
+        guard let dict = body as? [String: Any],
+              let screen = dict["screen"] as? String else { return }
+        setBannerVisible(screen == "game")
   }
 
   // Handles requests from the web content to show a native ad, e.g.:

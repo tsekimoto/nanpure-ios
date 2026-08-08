@@ -11,6 +11,7 @@ func createWebView(container: UIView, WKSMH: WKScriptMessageHandler, WKND: WKNav
 
     userContentController.add(WKSMH, name: "print")
     userContentController.add(WKSMH, name: "nativeAd")
+    userContentController.add(WKSMH, name: "screen")
 
     config.userContentController = userContentController
 
