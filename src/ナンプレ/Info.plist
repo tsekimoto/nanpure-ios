@@ -70,6 +70,15 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-7659346445516782~6278596713</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
+
 </dict>
 </plist>

@@ -25,3 +25,7 @@ let adaptiveUIStyle = false    // Keep the native shell light so the PWA backgro
 let overrideStatusBar = false   // iOS 13-14 only. if you don't support dark/light system theme.
 let statusBarTheme = "dark"    // dark / light, related to override option.
 let pullToRefresh = true    // Enable/disable pull down to refresh page
+
+// Height reserved at the bottom of the webview for the persistent ad banner.
+// Updated once the banner's adaptive size is known (see ViewController.layoutBannerAd).
+var bannerAdHeight: CGFloat = 0

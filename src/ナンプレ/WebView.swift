@@ -10,6 +10,7 @@ func createWebView(container: UIView, WKSMH: WKScriptMessageHandler, WKND: WKNav
     let userContentController = WKUserContentController()
 
     userContentController.add(WKSMH, name: "print")
+    userContentController.add(WKSMH, name: "nativeAd")
 
     config.userContentController = userContentController
 
@@ -70,7 +71,7 @@ func setCustomCookie(webView: WKWebView) {
 
 func calcWebviewFrame(webviewView: UIView, toolbarView: UIToolbar?) -> CGRect{
     if ((toolbarView) != nil) {
-        return CGRect(x: 0, y: toolbarView!.frame.height, width: webviewView.frame.width, height: webviewView.frame.height - toolbarView!.frame.height)
+        return CGRect(x: 0, y: toolbarView!.frame.height, width: webviewView.frame.width, height: webviewView.frame.height - toolbarView!.frame.height - bannerAdHeight)
     }
     else {
         let winScene = UIApplication.shared.connectedScenes.first
@@ -85,12 +86,12 @@ func calcWebviewFrame(webviewView: UIView, toolbarView: UIToolbar?) -> CGRect{
                     titlebar.toolbar = nil
                 }
             #endif
-            return CGRect(x: 0, y: 0, width: webviewView.frame.width, height: webviewView.frame.height)
+            return CGRect(x: 0, y: 0, width: webviewView.frame.width, height: webviewView.frame.height - bannerAdHeight)
         default:
             #if targetEnvironment(macCatalyst)
             statusBarHeight = 29
             #endif
-            let windowHeight = webviewView.frame.height - statusBarHeight
+            let windowHeight = webviewView.frame.height - statusBarHeight - bannerAdHeight
             return CGRect(x: 0, y: statusBarHeight, width: webviewView.frame.width, height: windowHeight)
         }
     }
