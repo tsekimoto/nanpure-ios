@@ -24,6 +24,9 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     // Desired banner visibility as last reported by the web content, kept
     // separately since it can be set before bannerView exists.
     private var bannerShouldBeVisible = false
+    // TEMP DEBUG: on-screen ad status readout so we can diagnose ad loading
+    // without Xcode console access. Remove before submitting for App Review.
+    var adDebugLabel: UILabel!
 
     var htmlIsLoaded = false;
     private var loadingMode = LoadingMode.defaultCachePolicy
@@ -48,10 +51,30 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         webviewView.backgroundColor = .white
         initWebView()
         initToolbarView()
+        initAdDebugLabel()
         loadRootUrl()
-    
+
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification , object: nil)
-        
+
+    }
+
+    // TEMP DEBUG: see adDebugLabel declaration above.
+    func initAdDebugLabel() {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 11)
+        label.textColor = .white
+        label.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        label.numberOfLines = 3
+        label.text = "Ad: (not requested yet)"
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
+            label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -4),
+        ])
+        view.bringSubviewToFront(label)
+        adDebugLabel = label
     }
 
     override func viewDidLayoutSubviews() {
@@ -155,6 +178,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     // The webview's own frame (see calcWebviewFrame) is shrunk by
     // bannerAdHeight so the banner never overlaps gameplay UI.
     func initBannerAd() {
+        adDebugLabel?.text = "Ad: requesting (width=\(webviewView.frame.width))"
         bannerView = AdManager.shared.makeBannerView(rootViewController: self, width: webviewView.frame.width)
         bannerView.delegate = self
         // Apply whatever visibility the web content already asked for —
@@ -328,6 +352,7 @@ extension ViewController: WKScriptMessageHandler {
   func handleScreenMessage(_ body: Any) {
         guard let dict = body as? [String: Any],
               let screen = dict["screen"] as? String else { return }
+        adDebugLabel?.text = "Ad: screen=\(screen), bannerView=\(bannerView == nil ? "nil" : "exists")"
         setBannerVisible(screen == "game")
   }
 
@@ -362,10 +387,12 @@ extension ViewController: WKScriptMessageHandler {
 
 extension ViewController: GADBannerViewDelegate {
     func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
+        adDebugLabel?.text = "Ad: loaded OK (hidden=\(bannerView.isHidden))"
         layoutBannerAd()
     }
 
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
+        adDebugLabel?.text = "Ad: FAILED - \(error.localizedDescription)"
         print("Banner ad failed to load: \(error.localizedDescription)")
     }
 }
