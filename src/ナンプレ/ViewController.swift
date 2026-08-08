@@ -45,7 +45,6 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         webviewView.backgroundColor = .white
         initWebView()
         initToolbarView()
-        initBannerAd()
         loadRootUrl()
     
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification , object: nil)
@@ -54,6 +53,12 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        // Deferred from viewDidLoad: webviewView.frame.width isn't reliably
+        // final until the first layout pass, and creating the adaptive
+        // banner with a zero/stale width breaks ad loading entirely.
+        if bannerView == nil && webviewView.frame.width > 0 {
+            initBannerAd()
+        }
         layoutBannerAd()
         sharedWebView.frame = calcWebviewFrame(webviewView: webviewView, toolbarView: nil)
     }
