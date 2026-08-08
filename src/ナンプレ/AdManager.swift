@@ -1,8 +1,13 @@
 import UIKit
 import GoogleMobileAds
 
-private let bannerAdUnitID = "ca-app-pub-7659346445516782/8870201118"
-private let rewardedAdUnitID = "ca-app-pub-7659346445516782/4139518536"
+// TEMP FOR TESTING: Google's official test ad unit IDs, swapped in while our
+// own AdMob app is still "要審査" and real ad units may have no fill.
+// Real IDs (restore before submitting for App Review):
+//   banner:   ca-app-pub-7659346445516782/8870201118
+//   rewarded: ca-app-pub-7659346445516782/4139518536
+private let bannerAdUnitID = "ca-app-pub-3940256099942544/2934735716"
+private let rewardedAdUnitID = "ca-app-pub-3940256099942544/1712485313"
 
 final class AdManager: NSObject {
     static let shared = AdManager()
