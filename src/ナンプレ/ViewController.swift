@@ -21,6 +21,9 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     @IBOutlet weak var webviewView: UIView!
     var toolbarView: UIToolbar!
     var bannerView: GADBannerView!
+    // Desired banner visibility as last reported by the web content, kept
+    // separately since it can be set before bannerView exists.
+    private var bannerShouldBeVisible = false
 
     var htmlIsLoaded = false;
     private var loadingMode = LoadingMode.defaultCachePolicy
@@ -154,7 +157,9 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     func initBannerAd() {
         bannerView = AdManager.shared.makeBannerView(rootViewController: self, width: webviewView.frame.width)
         bannerView.delegate = self
-        bannerView.isHidden = true
+        // Apply whatever visibility the web content already asked for —
+        // its "screen" message may have arrived before the banner existed.
+        bannerView.isHidden = !bannerShouldBeVisible
         webviewView.addSubview(bannerView)
         layoutBannerAd()
     }
@@ -172,6 +177,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     }
 
     func setBannerVisible(_ visible: Bool) {
+        bannerShouldBeVisible = visible
         guard let bannerView = bannerView, bannerView.isHidden == visible else { return }
         bannerView.isHidden = !visible
         layoutBannerAd()
