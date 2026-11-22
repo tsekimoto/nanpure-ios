@@ -31,9 +31,9 @@ jobs:
         run: |
           /bin/bash -n scripts/archive-app.sh scripts/upload-app.sh
           python3 -m unittest discover -s tests -v
-      - name: Check game navigation and native bridge boundaries
+      - name: Check navigation, bridge, and advertising lifecycle policies
         run: |
-          swiftc "src/ナンプレ/WebContentPolicy.swift" tests/main.swift -o "$RUNNER_TEMP/web-policy-tests"
+          swiftc "src/ナンプレ/WebContentPolicy.swift" "src/ナンプレ/AdLifecyclePolicy.swift" tests/main.swift -o "$RUNNER_TEMP/web-policy-tests"
           "$RUNNER_TEMP/web-policy-tests"
       - name: Start iPhone Simulator while compiling
         if: github.event_name == 'workflow_dispatch' && inputs.observe_ads
@@ -49,6 +49,8 @@ jobs:
           xcodebuild build -project "src/ナンプレ.xcodeproj" -scheme Nanpure \
             -configuration Release -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/verify-release" CODE_SIGNING_ALLOWED=NO
+      - name: Check production advertising and absence of diagnostic UI in Release
+        run: python3 scripts/check-release-app.py "$RUNNER_TEMP/verify-release/Build/Products/Release-iphonesimulator/Nanpure.app"
       - name: Observe Google demo-ad callbacks on iPhone Simulator
         if: github.event_name == 'workflow_dispatch' && inputs.observe_ads
         timeout-minutes: 8
