@@ -15,7 +15,8 @@ func createWebView(container: UIView, WKSMH: WKScriptMessageHandler, WKND: WKNav
 
     config.userContentController = userContentController
 
-    config.limitsNavigationsToAppBoundDomains = true;
+    // Restrict this game view through its navigation/message policy instead.
+    // App-wide WKAppBoundDomains interferes with the ad SDK's own web views.
     config.allowsInlineMediaPlayback = true
     config.preferences.javaScriptCanOpenWindowsAutomatically = true
     config.preferences.setValue(true, forKey: "standalone")
@@ -94,97 +95,67 @@ func calcWebviewFrame(webviewView: UIView, toolbarView: UIToolbar?) -> CGRect{
 }
 
 extension ViewController: WKUIDelegate, WKDownloadDelegate {
-    // redirect new tabs to main webview
+    func isTrustedGameFrame(_ frame: WKFrameInfo) -> Bool {
+        let origin = frame.securityOrigin
+        return webContentPolicy.trustsMainFrame(scheme: origin.protocol, host: origin.host,
+                                               port: origin.port, isMainFrame: frame.isMainFrame)
+    }
+
+    private func navigationPolicy(for action: WKNavigationAction) -> WebContentPolicy.Navigation {
+        webContentPolicy.navigation(to: action.request.url,
+                                    targetIsMainFrame: action.targetFrame?.isMainFrame ?? true,
+                                    trustedSource: isTrustedGameFrame(action.sourceFrame),
+                                    userActivated: action.navigationType == .linkActivated,
+                                    shouldDownload: action.shouldPerformDownload)
+    }
+
+    // Same-origin new windows stay in the game. External user links are handled
+    // by the policy delegate and never gain access to the native game bridge.
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if (navigationAction.targetFrame == nil) {
+        if navigationAction.targetFrame == nil,
+           isTrustedGameFrame(navigationAction.sourceFrame),
+           navigationPolicy(for: navigationAction) == .allow {
             webView.load(navigationAction.request)
         }
         return nil
     }
-    // restrict navigation to target host, open external links in 3rd party apps
+
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        if (navigationAction.request.url?.scheme == "about") {
-            return decisionHandler(.allow)
-        }
-        if (navigationAction.shouldPerformDownload || navigationAction.request.url?.scheme == "blob") {
-            return decisionHandler(.download)
-        }
-
-        if let requestUrl = navigationAction.request.url{
-            if let requestHost = requestUrl.host {
-                // NOTE: Match auth origin first, because host origin may be a subset of auth origin and may therefore always match
-                let matchingAuthOrigin = authOrigins.first(where: { requestHost.range(of: $0) != nil })
-                if (matchingAuthOrigin != nil) {
-                    decisionHandler(.allow)
-                    if (toolbarView.isHidden) {
-                        toolbarView.isHidden = false
-                        webView.frame = calcWebviewFrame(webviewView: webviewView, toolbarView: toolbarView)
-                    }
-                    return
-                }
-
-                let matchingHostOrigin = allowedOrigins.first(where: { requestHost.range(of: $0) != nil })
-                if (matchingHostOrigin != nil) {
-                    // Open in main webview
-                    decisionHandler(.allow)
-                    if (!toolbarView.isHidden) {
-                        toolbarView.isHidden = true
-                        webView.frame = calcWebviewFrame(webviewView: webviewView, toolbarView: nil)
-                    }
-                    return
-                }
-                if (navigationAction.navigationType == .other &&
-                    (navigationAction.value(forKey: "syntheticClickType") as? Int) == 0 &&
-                    (navigationAction.targetFrame != nil) &&
-                    // no error here, fake warning
-                    (navigationAction.sourceFrame != nil)
-                ) {
-                    decisionHandler(.allow)
-                    return
-                }
-                else {
-                    decisionHandler(.cancel)
-                }
-
-
-                if ["http", "https"].contains(requestUrl.scheme?.lowercased() ?? "") {
-                    // Can open with SFSafariViewController
-                    let safariViewController = SFSafariViewController(url: requestUrl)
-                    self.present(safariViewController, animated: true, completion: nil)
-                } else {
-                    // Scheme is not supported or no scheme is given, use openURL
-                    if (UIApplication.shared.canOpenURL(requestUrl)) {
-                        UIApplication.shared.open(requestUrl)
-                    }
-                }
-            } else {
-                decisionHandler(.cancel)
-                if (navigationAction.request.url?.scheme == "tel" || navigationAction.request.url?.scheme == "mailto" ){
-                    if (UIApplication.shared.canOpenURL(requestUrl)) {
-                        UIApplication.shared.open(requestUrl)
-                    }
-                }
-                else {
-                    if requestUrl.isFileURL {
-                        // not tested
-                        downloadAndOpenFile(url: requestUrl.absoluteURL)
-                    }
-                    // if (requestUrl.absoluteString.contains("base64")){
-                    //     downloadAndOpenBase64File(base64String: requestUrl.absoluteString)
-                    // }
-                }
+        switch navigationPolicy(for: navigationAction) {
+        case .allow:
+            toolbarView.isHidden = true
+            decisionHandler(.allow)
+        case .download:
+            decisionHandler(.download)
+        case .cancel:
+            decisionHandler(.cancel)
+        case .openExternally:
+            decisionHandler(.cancel)
+            guard let url = navigationAction.request.url else { return }
+            if ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+                present(SFSafariViewController(url: url), animated: true)
+            } else if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
             }
         }
-        else {
-            decisionHandler(.cancel)
-        }
+    }
 
+    // Check the final response too, so a redirect cannot move the privileged
+    // game view outside its origin after the initial navigation was allowed.
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse,
+                 decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        let url = navigationResponse.response.url
+        let trustedResponse = webContentPolicy.trustsURL(url)
+            || webContentPolicy.trustsBlobURL(url)
+        decisionHandler(navigationResponse.isForMainFrame && trustedResponse ? .allow : .cancel)
     }
     // Handle javascript: `window.alert(message: String)`
     func webView(_ webView: WKWebView,
         runJavaScriptAlertPanelWithMessage message: String,
         initiatedByFrame frame: WKFrameInfo,
         completionHandler: @escaping () -> Void) {
+
+        guard isTrustedGameFrame(frame) else { completionHandler(); return }
 
         // Set the message as the UIAlertController message
         let alert = UIAlertController(
@@ -212,6 +183,8 @@ extension ViewController: WKUIDelegate, WKDownloadDelegate {
         runJavaScriptConfirmPanelWithMessage message: String,
         initiatedByFrame frame: WKFrameInfo,
         completionHandler: @escaping (Bool) -> Void) {
+
+        guard isTrustedGameFrame(frame) else { completionHandler(false); return }
 
         // Set the message as the UIAlertController message
         let alert = UIAlertController(
@@ -251,6 +224,8 @@ extension ViewController: WKUIDelegate, WKDownloadDelegate {
         defaultText: String?,
         initiatedByFrame frame: WKFrameInfo,
         completionHandler: @escaping (String?) -> Void) {
+
+        guard isTrustedGameFrame(frame) else { completionHandler(nil); return }
 
         // Set the message as the UIAlertController message
         let alert = UIAlertController(

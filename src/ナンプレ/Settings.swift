@@ -8,14 +8,10 @@ struct Cookie {
 // URL for first launch
 let rootUrl = URL(string: "https://tsekimoto.github.io/nanpure-pwa/")!
 
-// allowed origin is for what we are sticking to pwa domain
-// This should also appear in Info.plist
+// Exact HTTPS hosts allowed inside the game web view. App-Bound Domains cannot
+// be used app-wide because that also prevents the ad SDK's web views loading.
 let allowedOrigins: [String] = ["tsekimoto.github.io"]
-
-// auth origins will open in modal and show toolbar for back into the main origin.
-// These should also appear in Info.plist
-let authOrigins: [String] = []
-// allowedOrigins + authOrigins <= 10
+let webContentPolicy = WebContentPolicy(allowedHosts: allowedOrigins)
 
 let platformCookie = Cookie(name: "app-platform", value: "iOS App Store")
 

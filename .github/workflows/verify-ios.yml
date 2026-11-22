@@ -1,6 +1,12 @@
 name: Verify iOS App
 
 on:
+  workflow_dispatch:
+    inputs:
+      observe_ads:
+        description: Observe live Google demo-ad callbacks on Simulator (network dependent)
+        type: boolean
+        default: false
   pull_request:
     branches:
       - main
@@ -25,6 +31,14 @@ jobs:
         run: |
           /bin/bash -n scripts/archive-app.sh scripts/upload-app.sh
           python3 -m unittest discover -s tests -v
+      - name: Check game navigation and native bridge boundaries
+        run: |
+          swiftc "src/ナンプレ/WebContentPolicy.swift" tests/main.swift -o "$RUNNER_TEMP/web-policy-tests"
+          "$RUNNER_TEMP/web-policy-tests"
+      - name: Start iPhone Simulator while compiling
+        if: github.event_name == 'workflow_dispatch' && inputs.observe_ads
+        timeout-minutes: 2
+        run: python3 scripts/observe-ad-load.py --prepare
       - name: Build Debug without signing
         run: |
           xcodebuild build -project "src/ナンプレ.xcodeproj" -scheme Nanpure \
@@ -35,3 +49,7 @@ jobs:
           xcodebuild build -project "src/ナンプレ.xcodeproj" -scheme Nanpure \
             -configuration Release -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/verify-release" CODE_SIGNING_ALLOWED=NO
+      - name: Observe Google demo-ad callbacks on iPhone Simulator
+        if: github.event_name == 'workflow_dispatch' && inputs.observe_ads
+        timeout-minutes: 8
+        run: python3 scripts/observe-ad-load.py
