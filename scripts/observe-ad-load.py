@@ -10,6 +10,7 @@ from pathlib import Path
 import queue
 import re
 import subprocess
+import sys
 import threading
 import time
 
@@ -20,20 +21,31 @@ def simctl(*arguments, timeout=120):
             ["xcrun", "simctl", *arguments], check=True, capture_output=True,
             text=True, timeout=timeout,
         ).stdout
+    except subprocess.TimeoutExpired:
+        raise SystemExit(f"Simulator {arguments[0]} exceeded {timeout}s") from None
     except (subprocess.SubprocessError, OSError):
         raise SystemExit(f"Simulator {arguments[0]} did not complete successfully") from None
 
 
 devices = json.loads(simctl("list", "devices", "available", "--json"))["devices"]
-phones = [device for runtime, values in devices.items() if ".iOS-" in runtime
-          for device in values if device["name"].startswith("iPhone")]
+ios_runtimes = sorted(
+    (runtime for runtime in devices if ".iOS-" in runtime),
+    key=lambda runtime: tuple(int(value) for value in runtime.split(".iOS-")[1].split("-")),
+    reverse=True,
+)
+phones = [device for runtime in ios_runtimes for device in devices[runtime]
+          if device["name"].startswith("iPhone")]
 if not phones:
     raise SystemExit("No available iPhone Simulator")
-device = phones[0]
+device = next((phone for phone in phones if phone["name"] == "iPhone 17 Pro"), phones[0])
 udid = device["udid"]
-if device["state"] != "Booted":
+if device["state"] == "Shutdown":
     simctl("boot", udid)
-simctl("bootstatus", udid, "-b", timeout=180)
+if "--prepare" in sys.argv:
+    print("Simulator boot requested before compilation: " + device["name"], flush=True)
+    raise SystemExit(0)
+print("Waiting for Simulator readiness: " + device["name"], flush=True)
+simctl("bootstatus", udid, "-b", timeout=300)
 app = Path(os.environ["RUNNER_TEMP"]) / "verify-debug/Build/Products/Debug-iphonesimulator/Nanpure.app"
 if not app.is_dir():
     raise SystemExit("Debug Simulator application not found")
