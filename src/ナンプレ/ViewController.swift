@@ -256,6 +256,9 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!){
         htmlIsLoaded = true
+        #if DEBUG
+        NSLog("NANPURE_DIAGNOSTICS web=loaded")
+        #endif
         
         self.setProgress(1.0, true)
         self.animateConnectionProblem(false)
@@ -364,6 +367,7 @@ extension UIColor {
 
 extension ViewController: WKScriptMessageHandler {
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.webView === sharedWebView, isTrustedGameFrame(message.frameInfo) else { return }
         if message.name == "print" {
             printView(webView: sharedWebView)
         }
@@ -420,6 +424,9 @@ extension ViewController: WKScriptMessageHandler {
 extension ViewController: GADBannerViewDelegate {
     func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
         guard bannerView === self.bannerView else { return }
+        #if DEBUG
+        NSLog("NANPURE_DIAGNOSTICS banner=loaded")
+        #endif
         bannerRequestFailed = false
         bannerLoadStatus = "loaded OK"
         updateAdDebugLabel()
@@ -431,6 +438,9 @@ extension ViewController: GADBannerViewDelegate {
         guard bannerView === self.bannerView else { return }
         bannerRequestFailed = true
         let adError = error as NSError
+        #if DEBUG
+        NSLog("NANPURE_DIAGNOSTICS banner=failed domain=%@ code=%ld", adError.domain, adError.code)
+        #endif
         bannerLoadStatus = "FAILED [\(adError.domain):\(adError.code)] \(error.localizedDescription)"
         updateAdDebugLabel()
         print("Banner ad failed to load: \(error.localizedDescription)")

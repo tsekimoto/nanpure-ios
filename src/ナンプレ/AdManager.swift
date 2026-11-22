@@ -50,9 +50,16 @@ final class AdManager: NSObject {
         GADRewardedAd.load(withAdUnitID: rewardedAdUnitID, request: makeRequest()) { [weak self] ad, error in
             guard let self else { return }
             if let error {
+                #if DEBUG
+                let adError = error as NSError
+                NSLog("NANPURE_DIAGNOSTICS rewarded=failed domain=%@ code=%ld", adError.domain, adError.code)
+                #endif
                 print("Rewarded ad failed to load: \(error.localizedDescription)")
                 return
             }
+            #if DEBUG
+            NSLog("NANPURE_DIAGNOSTICS rewarded=loaded")
+            #endif
             self.rewardedAd = ad
             self.rewardedAd?.fullScreenContentDelegate = self
         }
