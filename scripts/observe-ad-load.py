@@ -15,10 +15,13 @@ import time
 
 
 def simctl(*arguments, timeout=120):
-    return subprocess.run(
-        ["xcrun", "simctl", *arguments], check=True, capture_output=True,
-        text=True, timeout=timeout,
-    ).stdout
+    try:
+        return subprocess.run(
+            ["xcrun", "simctl", *arguments], check=True, capture_output=True,
+            text=True, timeout=timeout,
+        ).stdout
+    except (subprocess.SubprocessError, OSError):
+        raise SystemExit(f"Simulator {arguments[0]} did not complete successfully") from None
 
 
 devices = json.loads(simctl("list", "devices", "available", "--json"))["devices"]
@@ -31,7 +34,7 @@ udid = device["udid"]
 if device["state"] != "Booted":
     simctl("boot", udid)
 simctl("bootstatus", udid, "-b", timeout=180)
-app = Path(os.environ["RUNNER_TEMP"]) / "verify-debug/Build/Products/Debug-iphonesimulator/ナンプレ.app"
+app = Path(os.environ["RUNNER_TEMP"]) / "verify-debug/Build/Products/Debug-iphonesimulator/Nanpure.app"
 if not app.is_dir():
     raise SystemExit("Debug Simulator application not found")
 simctl("install", udid, str(app))
@@ -60,7 +63,7 @@ try:
             event = events.get(timeout=min(1, max(0.01, deadline - time.monotonic())))
         except queue.Empty:
             if process.poll() is not None:
-                break
+                raise SystemExit("Simulator application/console exited before observation completed")
             continue
         if event not in observed:
             observed.add(event)
