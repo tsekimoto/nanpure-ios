@@ -1,12 +1,12 @@
 import Foundation
 
 // Compile this executable with the same policy source that the app target uses:
-// swiftc 'src/ナンプレ/WebContentPolicy.swift' tests/main.swift -o /tmp/nanpure-policy-tests
+// swiftc 'src/ナンプレ/WebContentPolicy.swift' 'src/ナンプレ/AdLifecyclePolicy.swift' tests/main.swift -o /tmp/nanpure-policy-tests
 let policy = WebContentPolicy(allowedHosts: ["tsekimoto.github.io"])
 var checks = 0
 
 func expect(_ condition: @autoclosure () -> Bool, _ name: String) {
-    guard condition() else { fatalError("Web content policy failed: \(name)") }
+    guard condition() else { fatalError("App policy failed: \(name)") }
     checks += 1
 }
 
@@ -79,4 +79,62 @@ expect(decision("javascript:alert(1)", userActivated: true) == .cancel, "script 
 expect(decision("about:blank") == .cancel, "blank top-level navigation cannot inherit bridge")
 expect(decision(nil) == .cancel, "missing navigation URL")
 
-print("Web content policy: \(checks) checks passed")
+let loadedAt = Date(timeIntervalSince1970: 1_000_000)
+var ads = RewardedAdLifecycle()
+let firstLoad = ads.beginLoad()!
+expect(ads.beginLoad() == nil, "repeated requests share one pending load")
+expect(!ads.completeLoad(token: UUID(), succeeded: true, now: loadedAt), "foreign load callback ignored")
+expect(ads.completeLoad(token: firstLoad, succeeded: true, now: loadedAt), "current load accepted")
+expect(ads.beginLoad() == nil, "loaded ad prevents another prefetch")
+expect(ads.hasFreshAd(now: loadedAt.addingTimeInterval(3_599)), "cached ad fresh before one hour")
+expect(!ads.hasFreshAd(now: loadedAt.addingTimeInterval(3_600)), "cached ad expires at one hour")
+expect(ads.beginPresentation(adID: firstLoad, now: loadedAt.addingTimeInterval(3_600)) == nil, "expired ad cannot present")
+expect(ads.expireCache(now: loadedAt.addingTimeInterval(3_600)), "expired ad evicted")
+
+let secondLoad = ads.beginLoad()!
+expect(ads.completeLoad(token: secondLoad, succeeded: true, now: loadedAt), "replacement load accepted")
+expect(ads.beginPresentation(adID: UUID(), now: loadedAt) == nil, "wrong ad identity cannot present")
+let presentation = ads.beginPresentation(adID: secondLoad, now: loadedAt)!
+expect(ads.cachedAdID == nil, "presentation consumes cached ad")
+expect(ads.beginPresentation(adID: secondLoad, now: loadedAt) == nil, "duplicate presentation rejected")
+expect(ads.beginLoad() == nil, "no prefetch during presentation")
+expect(!ads.grantReward(token: UUID(), adID: secondLoad), "wrong presentation token cannot grant")
+expect(!ads.grantReward(token: presentation, adID: UUID()), "wrong ad identity cannot grant")
+expect(ads.grantReward(token: presentation, adID: secondLoad), "earned reward delivered")
+expect(!ads.grantReward(token: presentation, adID: secondLoad), "duplicate reward ignored")
+expect(ads.isPresenting, "busy retained after reward until dismissal")
+expect(ads.beginLoad() == nil, "reward does not permit another load before dismissal")
+expect(ads.endPresentation(token: UUID(), adID: secondLoad) == nil, "old dismissal cannot end current ad")
+expect(ads.endPresentation(token: presentation, adID: UUID()) == nil, "wrong ad cannot end presentation")
+expect(ads.endPresentation(token: presentation, adID: secondLoad) == false, "earned reward not followed by false callback")
+expect(!ads.isPresenting, "dismissal releases busy state")
+expect(ads.endPresentation(token: presentation, adID: secondLoad) == nil, "duplicate dismissal ignored")
+
+let thirdLoad = ads.beginLoad()!
+expect(ads.completeLoad(token: thirdLoad, succeeded: true, now: loadedAt), "next ad loaded")
+let nextPresentation = ads.beginPresentation(adID: thirdLoad, now: loadedAt)!
+expect(!ads.grantReward(token: presentation, adID: secondLoad), "late previous reward cannot affect next presentation")
+expect(ads.endPresentation(token: presentation, adID: secondLoad) == nil, "late previous failure cannot end next presentation")
+expect(ads.endPresentation(token: nextPresentation, adID: thirdLoad) == true, "early dismissal or presentation failure returns false once")
+expect(ads.endPresentation(token: nextPresentation, adID: thirdLoad) == nil, "early-dismiss callback is once only")
+
+let failedLoad = ads.beginLoad()!
+expect(ads.completeLoad(token: failedLoad, succeeded: false, now: loadedAt), "offline load failure accepted")
+expect(ads.cachedAdID == nil, "load failure has no usable reward")
+let obsoleteLoad = ads.beginLoad()!
+ads.invalidateCache()
+let currentLoad = ads.beginLoad()!
+expect(!ads.completeLoad(token: obsoleteLoad, succeeded: true, now: loadedAt), "late load after privacy change ignored")
+expect(ads.loadToken == currentLoad, "late load leaves current request intact")
+expect(ads.completeLoad(token: currentLoad, succeeded: true, now: loadedAt), "current request after privacy change accepted")
+expect(ads.expireCache(now: loadedAt.addingTimeInterval(-1)), "clock rollback does not extend cached ad lifetime")
+
+var startup = AdSDKStartup()
+expect(!startup.claimStart(canRequestAds: false), "no SDK start without consent permission")
+expect(!startup.requested, "offline consent failure remains retryable")
+expect(startup.claimStart(canRequestAds: true), "SDK starts after permission")
+expect(!startup.claimStart(canRequestAds: true), "duplicate consent completions do not restart SDK")
+expect(!startup.claimStart(canRequestAds: false), "revocation cannot start SDK")
+expect(!startup.claimStart(canRequestAds: true), "later consent reuses the initialized SDK")
+
+print("App policies: \(checks) checks passed")

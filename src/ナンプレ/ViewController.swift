@@ -24,11 +24,10 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     // Desired banner visibility as last reported by the web content, kept
     // separately since it can be set before bannerView exists.
     private var bannerShouldBeVisible = false
-    // Temporary TestFlight diagnostics. Remove before App Store submission.
-    var adDebugLabel: UILabel!
-    private var bannerLoadStatus = "not requested yet"
     private var bannerScreen = "unknown"
     private var bannerRequestFailed = false
+    private var bannerHasLoaded = false
+    private var privacyOptionsButton: UIButton!
 
     var htmlIsLoaded = false;
     private var loadingMode = LoadingMode.defaultCachePolicy
@@ -53,38 +52,62 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         webviewView.backgroundColor = .white
         initWebView()
         initToolbarView()
-        initAdDebugLabel()
+        initPrivacyOptionsButton()
+        AdManager.shared.stateDidChange = { [weak self] in self?.updateAdAvailability() }
         loadRootUrl()
 
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification , object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(adsDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
 
     }
 
-    func initAdDebugLabel() {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 11)
-        label.textColor = .white
-        label.backgroundColor = UIColor.black.withAlphaComponent(0.6)
-        label.numberOfLines = 3
-        label.isUserInteractionEnabled = true
-        label.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(retryFailedBanner)))
-        label.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
-            label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -4),
-        ])
-        view.bringSubviewToFront(label)
-        adDebugLabel = label
-        updateAdDebugLabel()
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        adsDidBecomeActive()
     }
 
-    private func updateAdDebugLabel() {
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
-        let visibility = bannerView.map { $0.isHidden ? "hidden" : "visible" } ?? "not created"
-        let retryHint = bannerRequestFailed ? " / タップして再試行" : ""
-        adDebugLabel?.text = "Ad: build=\(build), screen=\(bannerScreen), \(visibility)\(retryHint)\n\(bannerLoadStatus)"
+    @objc private func adsDidBecomeActive() {
+        AdManager.shared.prepareAds(from: self)
+        retryFailedBanner()
+        updateAdAvailability()
+    }
+
+    private func initPrivacyOptionsButton() {
+        let button = UIButton(type: .system)
+        button.setTitle("広告のプライバシー設定", for: .normal)
+        button.titleLabel?.font = .preferredFont(forTextStyle: .footnote)
+        button.titleLabel?.adjustsFontForContentSizeCategory = true
+        button.addTarget(self, action: #selector(showPrivacyOptions), for: .touchUpInside)
+        button.backgroundColor = .systemBackground
+        button.isHidden = true
+        webviewView.addSubview(button)
+        privacyOptionsButton = button
+    }
+
+    private func updateAdAvailability() {
+        if !AdManager.shared.canLoadAds {
+            bannerView?.delegate = nil
+            bannerView?.removeFromSuperview()
+            bannerView = nil
+            bannerRequestFailed = false
+            bannerHasLoaded = false
+            bannerAdHeight = 0
+        }
+        // Keep this real user control on the home screen and reserve its space.
+        privacyOptionsButton.isHidden = bannerScreen != "home" || !htmlIsLoaded
+            || !AdManager.shared.privacyOptionsRequired
+        privacyOptionsButton.isEnabled = !AdManager.shared.consentFlowInProgress
+        view.setNeedsLayout()
+    }
+
+    @objc private func showPrivacyOptions() {
+        AdManager.shared.presentPrivacyOptions(from: self) { [weak self] succeeded in
+            guard let self, !succeeded, self.viewIfLoaded?.window != nil,
+                  self.presentedViewController == nil else { return }
+            let alert = UIAlertController(title: "設定を開けませんでした", message: "通信を確認して、もう一度お試しください。", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "閉じる", style: .default))
+            self.present(alert, animated: true)
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -92,11 +115,20 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         // Deferred from viewDidLoad: webviewView.frame.width isn't reliably
         // final until the first layout pass, and creating the adaptive
         // banner with a zero/stale width breaks ad loading entirely.
-        if bannerView == nil && webviewView.frame.width > 0 {
+        if bannerView == nil && webviewView.frame.width > 0 && AdManager.shared.canLoadAds {
             initBannerAd()
         }
         layoutBannerAd()
-        sharedWebView.frame = calcWebviewFrame(webviewView: webviewView, toolbarView: nil)
+        var gameFrame = calcWebviewFrame(webviewView: webviewView, toolbarView: nil)
+        if !privacyOptionsButton.isHidden {
+            let buttonHeight = max(44, (privacyOptionsButton.titleLabel?.font.lineHeight ?? 20) + 20)
+            let reservedHeight = buttonHeight + view.safeAreaInsets.bottom
+            privacyOptionsButton.frame = CGRect(x: 12, y: gameFrame.maxY - reservedHeight,
+                                                width: max(0, gameFrame.width - 24), height: buttonHeight)
+            gameFrame.size.height = max(0, gameFrame.height - reservedHeight)
+            webviewView.bringSubviewToFront(privacyOptionsButton)
+        }
+        sharedWebView.frame = gameFrame
     }
     
     @objc func keyboardWillHide(_ notification: NSNotification) {
@@ -188,22 +220,22 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     // The webview's own frame (see calcWebviewFrame) is shrunk by
     // bannerAdHeight so the banner never overlaps gameplay UI.
     func initBannerAd() {
+        guard AdManager.shared.canLoadAds else { return }
         bannerRequestFailed = false
-        bannerLoadStatus = "requesting (width=\(webviewView.frame.width))"
+        bannerHasLoaded = false
         bannerView = AdManager.shared.makeBannerView(rootViewController: self, width: webviewView.frame.width, delegate: self)
         // Apply whatever visibility the web content already asked for —
         // its "screen" message may have arrived before the banner existed.
-        bannerView.isHidden = !bannerShouldBeVisible
+        bannerView.isHidden = true
         webviewView.addSubview(bannerView)
         layoutBannerAd()
-        updateAdDebugLabel()
         // Install the view and delegate before a load can report a result.
         AdManager.shared.loadBanner(bannerView)
     }
 
     @objc private func retryFailedBanner() {
         // A pending or successful request must never be restarted by a tap.
-        guard bannerRequestFailed, bannerShouldBeVisible,
+        guard bannerRequestFailed, bannerShouldBeVisible, AdManager.shared.canLoadAds,
               view.window != nil, UIApplication.shared.applicationState == .active else { return }
         bannerRequestFailed = false
         // Retire the old view so its automatic refresh cannot compete with
@@ -216,7 +248,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     }
 
     func layoutBannerAd() {
-        guard let bannerView = bannerView else { return }
+        guard let bannerView = bannerView else { bannerAdHeight = 0; return }
         let bottomInset = view.safeAreaInsets.bottom
         bannerView.frame = CGRect(
             x: (webviewView.frame.width - bannerView.frame.width) / 2,
@@ -229,8 +261,9 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
 
     func setBannerVisible(_ visible: Bool) {
         bannerShouldBeVisible = visible
-        guard let bannerView = bannerView, bannerView.isHidden == visible else { return }
-        bannerView.isHidden = !visible
+        let shouldShow = visible && bannerHasLoaded
+        guard let bannerView = bannerView, bannerView.isHidden == shouldShow else { return }
+        bannerView.isHidden = !shouldShow
         layoutBannerAd()
         // The parent recomputes the WKWebView frame in viewDidLayoutSubviews.
         view.setNeedsLayout()
@@ -256,6 +289,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!){
         htmlIsLoaded = true
+        updateAdAvailability()
         #if DEBUG
         NSLog("NANPURE_DIAGNOSTICS web=loaded")
         #endif
@@ -339,6 +373,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     }
         
     deinit {
+        NotificationCenter.default.removeObserver(self)
         sharedWebView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
     }
 }
@@ -389,7 +424,7 @@ extension ViewController: WKScriptMessageHandler {
         if screen == "game" {
             retryFailedBanner()
         }
-        updateAdDebugLabel()
+        updateAdAvailability()
   }
 
   // Handles requests from the web content to show a native ad, e.g.:
@@ -428,8 +463,8 @@ extension ViewController: GADBannerViewDelegate {
         NSLog("NANPURE_DIAGNOSTICS banner=loaded")
         #endif
         bannerRequestFailed = false
-        bannerLoadStatus = "loaded OK"
-        updateAdDebugLabel()
+        bannerHasLoaded = true
+        setBannerVisible(bannerShouldBeVisible)
         layoutBannerAd()
         view.setNeedsLayout()
     }
@@ -437,12 +472,11 @@ extension ViewController: GADBannerViewDelegate {
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
         guard bannerView === self.bannerView else { return }
         bannerRequestFailed = true
-        let adError = error as NSError
+        bannerHasLoaded = false
+        setBannerVisible(bannerShouldBeVisible)
         #if DEBUG
+        let adError = error as NSError
         NSLog("NANPURE_DIAGNOSTICS banner=failed domain=%@ code=%ld", adError.domain, adError.code)
         #endif
-        bannerLoadStatus = "FAILED [\(adError.domain):\(adError.code)] \(error.localizedDescription)"
-        updateAdDebugLabel()
-        print("Banner ad failed to load: \(error.localizedDescription)")
     }
 }

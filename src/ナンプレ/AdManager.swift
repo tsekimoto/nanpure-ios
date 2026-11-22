@@ -1,30 +1,123 @@
 import UIKit
 import GoogleMobileAds
+import UserMessagingPlatform
 
-// TEMP FOR TESTING: Google's official test ad unit IDs, swapped in while our
-// own AdMob app is still "要審査" and real ad units may have no fill.
-// Real IDs (restore before submitting for App Review):
-//   banner:   ca-app-pub-7659346445516782/8870201118
-//   rewarded: ca-app-pub-7659346445516782/4139518536
-// Google's anchored adaptive banner demo unit, matching the requested ad size.
+#if DEBUG
 private let bannerAdUnitID = "ca-app-pub-3940256099942544/2435281174"
 private let rewardedAdUnitID = "ca-app-pub-3940256099942544/1712485313"
+#else
+private let bannerAdUnitID = "ca-app-pub-7659346445516782/8870201118"
+private let rewardedAdUnitID = "ca-app-pub-7659346445516782/4139518536"
+#endif
 
 final class AdManager: NSObject {
     static let shared = AdManager()
+    var stateDidChange: (() -> Void)?
 
+    private var startup = AdSDKStartup()
+    private var sdkReady = false
+    private var consentUpdateStarted = false
+    private var consentRefreshNeeded = true
+    private(set) var consentFlowInProgress = false
+    private var lifecycle = RewardedAdLifecycle()
     private var rewardedAd: GADRewardedAd?
+    private var presentingAd: GADRewardedAd?
+    private var presentationDelegate: RewardPresentationDelegate?
     private var pendingRewardCallback: ((Bool) -> Void)?
 
     private override init() {}
 
-    func start() {
-        GADMobileAds.sharedInstance().start(completionHandler: nil)
-        loadRewardedAd()
+    var privacyOptionsRequired: Bool {
+        UMPConsentInformation.sharedInstance.privacyOptionsRequirementStatus == .required
     }
 
-    // Non-personalized ads only: no IDFA/tracking is requested, so no ATT
-    // prompt is needed. See https://developers.google.com/admob/ios/eu-consent
+    private var consentAllowsAds: Bool {
+        consentUpdateStarted && !consentFlowInProgress
+            && UMPConsentInformation.sharedInstance.canRequestAds
+    }
+
+    var canLoadAds: Bool { sdkReady && consentAllowsAds }
+
+    // The game starts independently, including offline. Retry failed consent
+    // work on the next foreground without hiding or reloading the game.
+    func prepareAds(from viewController: UIViewController) {
+        guard viewController.viewIfLoaded?.window != nil,
+              UIApplication.shared.applicationState == .active else { return }
+        guard !consentFlowInProgress, !lifecycle.isPresenting else { return }
+        guard consentRefreshNeeded else {
+            resumeAdsIfAllowed()
+            return
+        }
+        guard viewController.presentedViewController == nil else { return }
+        consentFlowInProgress = true
+        consentUpdateStarted = true
+        discardCachedReward()
+        stateDidChange?()
+        UMPConsentInformation.sharedInstance.requestConsentInfoUpdate(with: UMPRequestParameters()) { [weak self, weak viewController] error in
+            guard let self else { return }
+            if error != nil {
+                self.finishConsentFlow(succeeded: false)
+                return
+            }
+            guard let viewController, viewController.viewIfLoaded?.window != nil,
+                  UIApplication.shared.applicationState == .active,
+                  viewController.presentedViewController == nil else {
+                self.finishConsentFlow(succeeded: false)
+                return
+            }
+            UMPConsentForm.loadAndPresentIfRequired(from: viewController) { [weak self] error in
+                self?.finishConsentFlow(succeeded: error == nil)
+            }
+        }
+    }
+
+    func presentPrivacyOptions(from viewController: UIViewController, completion: @escaping (Bool) -> Void) {
+        guard privacyOptionsRequired, !consentFlowInProgress, !lifecycle.isPresenting,
+              viewController.viewIfLoaded?.window != nil,
+              viewController.presentedViewController == nil,
+              UIApplication.shared.applicationState == .active else {
+            completion(false)
+            return
+        }
+        consentFlowInProgress = true
+        discardCachedReward()
+        stateDidChange?()
+        UMPConsentForm.presentPrivacyOptionsForm(from: viewController) { [weak self] error in
+            self?.finishConsentFlow(succeeded: error == nil)
+            completion(error == nil)
+        }
+    }
+
+    private func finishConsentFlow(succeeded: Bool) {
+        consentFlowInProgress = false
+        consentRefreshNeeded = !succeeded
+        // UMP can retain a valid previous-session choice when an update fails.
+        resumeAdsIfAllowed()
+        stateDidChange?()
+    }
+
+    private func resumeAdsIfAllowed() {
+        guard consentAllowsAds else {
+            discardCachedReward()
+            stateDidChange?()
+            return
+        }
+        if startup.claimStart(canRequestAds: consentAllowsAds) {
+            // Retain non-personalized requests and the existing no-ATT approach.
+            GADMobileAds.sharedInstance().requestConfiguration.setPublisherFirstPartyIDEnabled(false)
+            GADMobileAds.sharedInstance().start { [weak self] _ in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.sdkReady = true
+                    self.loadRewardedAd()
+                    self.stateDidChange?()
+                }
+            }
+        } else if sdkReady {
+            loadRewardedAd()
+        }
+    }
+
     private func makeRequest() -> GADRequest {
         let request = GADRequest()
         let extras = GADExtras()
@@ -43,59 +136,91 @@ final class AdManager: NSObject {
     }
 
     func loadBanner(_ bannerView: GADBannerView) {
+        guard canLoadAds else { return }
         bannerView.load(makeRequest())
     }
 
+    private func discardCachedReward() {
+        lifecycle.invalidateCache()
+        rewardedAd = nil
+    }
+
     private func loadRewardedAd() {
+        guard canLoadAds else { return }
+        if lifecycle.expireCache(now: Date()) { rewardedAd = nil }
+        guard let token = lifecycle.beginLoad() else { return }
         GADRewardedAd.load(withAdUnitID: rewardedAdUnitID, request: makeRequest()) { [weak self] ad, error in
-            guard let self else { return }
-            if let error {
+            DispatchQueue.main.async {
+                guard let self else { return }
+                let succeeded = error == nil && ad != nil && self.canLoadAds
+                guard self.lifecycle.completeLoad(token: token, succeeded: succeeded, now: Date()) else { return }
+                self.rewardedAd = succeeded ? ad : nil
                 #if DEBUG
-                let adError = error as NSError
-                NSLog("NANPURE_DIAGNOSTICS rewarded=failed domain=%@ code=%ld", adError.domain, adError.code)
+                if succeeded {
+                    NSLog("NANPURE_DIAGNOSTICS rewarded=loaded")
+                } else if let error {
+                    let adError = error as NSError
+                    NSLog("NANPURE_DIAGNOSTICS rewarded=failed domain=%@ code=%ld", adError.domain, adError.code)
+                }
                 #endif
-                print("Rewarded ad failed to load: \(error.localizedDescription)")
-                return
             }
-            #if DEBUG
-            NSLog("NANPURE_DIAGNOSTICS rewarded=loaded")
-            #endif
-            self.rewardedAd = ad
-            self.rewardedAd?.fullScreenContentDelegate = self
         }
     }
 
-    // Presents a rewarded ad. `completion` is called with `true` only if the
-    // user watched far enough to earn the reward, `false` otherwise (ad not
-    // ready, failed to present, or dismissed early).
     func presentRewardedAd(from viewController: UIViewController, completion: @escaping (Bool) -> Void) {
-        guard let rewardedAd else {
+        guard canLoadAds, !lifecycle.isPresenting,
+              viewController.viewIfLoaded?.window != nil,
+              viewController.presentedViewController == nil,
+              UIApplication.shared.applicationState == .active else {
+            completion(false)
+            return
+        }
+        if lifecycle.expireCache(now: Date()) { rewardedAd = nil }
+        guard let ad = rewardedAd, let adID = lifecycle.cachedAdID,
+              let token = lifecycle.beginPresentation(adID: adID, now: Date()) else {
             completion(false)
             loadRewardedAd()
             return
         }
+        rewardedAd = nil
+        presentingAd = ad
         pendingRewardCallback = completion
-        rewardedAd.present(fromRootViewController: viewController) { [weak self] in
-            self?.pendingRewardCallback?(true)
-            self?.pendingRewardCallback = nil
+        let delegate = RewardPresentationDelegate { [weak self] callbackAd in
+            self?.finishPresentation(ad: callbackAd, token: token, adID: adID)
         }
+        presentationDelegate = delegate
+        ad.fullScreenContentDelegate = delegate
+        ad.present(fromRootViewController: viewController) { [weak self, weak ad] in
+            guard let self, let ad, self.presentingAd === ad,
+                  self.lifecycle.grantReward(token: token, adID: adID) else { return }
+            let callback = self.pendingRewardCallback
+            self.pendingRewardCallback = nil
+            callback?(true)
+        }
+    }
+
+    private func finishPresentation(ad: GADFullScreenPresentingAd, token: UUID, adID: UUID) {
+        guard let presentingAd, (ad as AnyObject) === presentingAd,
+              let needsFailure = lifecycle.endPresentation(token: token, adID: adID) else { return }
+        let callback = pendingRewardCallback
+        pendingRewardCallback = nil
+        presentingAd.fullScreenContentDelegate = nil
+        self.presentingAd = nil
+        presentationDelegate = nil
+        if needsFailure { callback?(false) }
+        loadRewardedAd()
     }
 }
 
-extension AdManager: GADFullScreenContentDelegate {
-    func adDidDismissFullScreenContent(_ ad: GADFullScreenPresentingAd) {
-        rewardedAd = nil
-        loadRewardedAd()
-        // If still set here, the reward handler above never fired, i.e. the
-        // user closed the ad before earning the reward.
-        pendingRewardCallback?(false)
-        pendingRewardCallback = nil
+private final class RewardPresentationDelegate: NSObject, GADFullScreenContentDelegate {
+    private let finish: (GADFullScreenPresentingAd) -> Void
+
+    init(finish: @escaping (GADFullScreenPresentingAd) -> Void) {
+        self.finish = finish
+        super.init()
     }
 
-    func ad(_ ad: GADFullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
-        rewardedAd = nil
-        pendingRewardCallback?(false)
-        pendingRewardCallback = nil
-        loadRewardedAd()
-    }
+    func adDidDismissFullScreenContent(_ ad: GADFullScreenPresentingAd) { finish(ad) }
+
+    func ad(_ ad: GADFullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) { finish(ad) }
 }
