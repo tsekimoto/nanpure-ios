@@ -30,19 +30,14 @@ func createWebView(container: UIView, WKSMH: WKScriptMessageHandler, WKND: WKNav
     webView.scrollView.contentInsetAdjustmentBehavior = .never
     webView.allowsBackForwardNavigationGestures = true
     
-    // Check if macCatalyst 16.4+ is available and if so, enable web inspector.
-    // This allows the web app to be inspected using Safari Web Inspector. Supported on iOS 16.4+ and macOS 13.3+
-    if #available(iOS 16.4, macOS 13.3, *) {
-        webView.isInspectable = true
-    }
-    
     let deviceModel = UIDevice.current.model
     let osVersion = UIDevice.current.systemVersion
     webView.configuration.applicationNameForUserAgent = "Safari/604.1"
     webView.customUserAgent = "Mozilla/5.0 (\(deviceModel); CPU \(deviceModel) OS \(osVersion.replacingOccurrences(of: ".", with: "_")) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(osVersion) Mobile/15E148 Safari/604.1 PWAShell"
 
+    // Safari Web Inspector is available only in development builds.
     #if DEBUG
-    if #available(iOS 16.4, *) {
+    if #available(iOS 16.4, macOS 13.3, *) {
         webView.isInspectable = true
     }
     #endif

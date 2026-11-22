@@ -24,9 +24,11 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     // Desired banner visibility as last reported by the web content, kept
     // separately since it can be set before bannerView exists.
     private var bannerShouldBeVisible = false
-    // TEMP DEBUG: on-screen ad status readout so we can diagnose ad loading
-    // without Xcode console access. Remove before submitting for App Review.
+    // Temporary TestFlight diagnostics. Remove before App Store submission.
     var adDebugLabel: UILabel!
+    private var bannerLoadStatus = "not requested yet"
+    private var bannerScreen = "unknown"
+    private var bannerRequestFailed = false
 
     var htmlIsLoaded = false;
     private var loadingMode = LoadingMode.defaultCachePolicy
@@ -58,14 +60,14 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
 
     }
 
-    // TEMP DEBUG: see adDebugLabel declaration above.
     func initAdDebugLabel() {
         let label = UILabel()
         label.font = .systemFont(ofSize: 11)
         label.textColor = .white
         label.backgroundColor = UIColor.black.withAlphaComponent(0.6)
         label.numberOfLines = 3
-        label.text = "Ad: (not requested yet)"
+        label.isUserInteractionEnabled = true
+        label.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(retryFailedBanner)))
         label.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(label)
         NSLayoutConstraint.activate([
@@ -75,6 +77,14 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         ])
         view.bringSubviewToFront(label)
         adDebugLabel = label
+        updateAdDebugLabel()
+    }
+
+    private func updateAdDebugLabel() {
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
+        let visibility = bannerView.map { $0.isHidden ? "hidden" : "visible" } ?? "not created"
+        let retryHint = bannerRequestFailed ? " / タップして再試行" : ""
+        adDebugLabel?.text = "Ad: build=\(build), screen=\(bannerScreen), \(visibility)\(retryHint)\n\(bannerLoadStatus)"
     }
 
     override func viewDidLayoutSubviews() {
@@ -178,14 +188,31 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
     // The webview's own frame (see calcWebviewFrame) is shrunk by
     // bannerAdHeight so the banner never overlaps gameplay UI.
     func initBannerAd() {
-        adDebugLabel?.text = "Ad: requesting (width=\(webviewView.frame.width))"
-        bannerView = AdManager.shared.makeBannerView(rootViewController: self, width: webviewView.frame.width)
-        bannerView.delegate = self
+        bannerRequestFailed = false
+        bannerLoadStatus = "requesting (width=\(webviewView.frame.width))"
+        bannerView = AdManager.shared.makeBannerView(rootViewController: self, width: webviewView.frame.width, delegate: self)
         // Apply whatever visibility the web content already asked for —
         // its "screen" message may have arrived before the banner existed.
         bannerView.isHidden = !bannerShouldBeVisible
         webviewView.addSubview(bannerView)
         layoutBannerAd()
+        updateAdDebugLabel()
+        // Install the view and delegate before a load can report a result.
+        AdManager.shared.loadBanner(bannerView)
+    }
+
+    @objc private func retryFailedBanner() {
+        // A pending or successful request must never be restarted by a tap.
+        guard bannerRequestFailed, bannerShouldBeVisible,
+              view.window != nil, UIApplication.shared.applicationState == .active else { return }
+        bannerRequestFailed = false
+        // Retire the old view so its automatic refresh cannot compete with
+        // this explicit retry. Late callbacks are ignored by identity below.
+        bannerView?.delegate = nil
+        bannerView?.removeFromSuperview()
+        bannerView = nil
+        initBannerAd()
+        view.setNeedsLayout()
     }
 
     func layoutBannerAd() {
@@ -205,7 +232,8 @@ class ViewController: UIViewController, WKNavigationDelegate, UIDocumentInteract
         guard let bannerView = bannerView, bannerView.isHidden == visible else { return }
         bannerView.isHidden = !visible
         layoutBannerAd()
-        sharedWebView.setNeedsLayout()
+        // The parent recomputes the WKWebView frame in viewDidLayoutSubviews.
+        view.setNeedsLayout()
     }
     
     @objc func loadRootUrl(cachePolicy: NSURLRequest.CachePolicy = .useProtocolCachePolicy) {
@@ -352,8 +380,12 @@ extension ViewController: WKScriptMessageHandler {
   func handleScreenMessage(_ body: Any) {
         guard let dict = body as? [String: Any],
               let screen = dict["screen"] as? String else { return }
-        adDebugLabel?.text = "Ad: screen=\(screen), bannerView=\(bannerView == nil ? "nil" : "exists")"
+        bannerScreen = screen
         setBannerVisible(screen == "game")
+        if screen == "game" {
+            retryFailedBanner()
+        }
+        updateAdDebugLabel()
   }
 
   // Handles requests from the web content to show a native ad, e.g.:
@@ -387,12 +419,20 @@ extension ViewController: WKScriptMessageHandler {
 
 extension ViewController: GADBannerViewDelegate {
     func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
-        adDebugLabel?.text = "Ad: loaded OK (hidden=\(bannerView.isHidden))"
+        guard bannerView === self.bannerView else { return }
+        bannerRequestFailed = false
+        bannerLoadStatus = "loaded OK"
+        updateAdDebugLabel()
         layoutBannerAd()
+        view.setNeedsLayout()
     }
 
     func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
-        adDebugLabel?.text = "Ad: FAILED - \(error.localizedDescription)"
+        guard bannerView === self.bannerView else { return }
+        bannerRequestFailed = true
+        let adError = error as NSError
+        bannerLoadStatus = "FAILED [\(adError.domain):\(adError.code)] \(error.localizedDescription)"
+        updateAdDebugLabel()
         print("Banner ad failed to load: \(error.localizedDescription)")
     }
 }

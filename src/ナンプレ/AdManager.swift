@@ -6,7 +6,8 @@ import GoogleMobileAds
 // Real IDs (restore before submitting for App Review):
 //   banner:   ca-app-pub-7659346445516782/8870201118
 //   rewarded: ca-app-pub-7659346445516782/4139518536
-private let bannerAdUnitID = "ca-app-pub-3940256099942544/2934735716"
+// Google's anchored adaptive banner demo unit, matching the requested ad size.
+private let bannerAdUnitID = "ca-app-pub-3940256099942544/2435281174"
 private let rewardedAdUnitID = "ca-app-pub-3940256099942544/1712485313"
 
 final class AdManager: NSObject {
@@ -32,13 +33,17 @@ final class AdManager: NSObject {
         return request
     }
 
-    func makeBannerView(rootViewController: UIViewController, width: CGFloat) -> GADBannerView {
+    func makeBannerView(rootViewController: UIViewController, width: CGFloat, delegate: GADBannerViewDelegate) -> GADBannerView {
         let adSize = GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(width)
         let bannerView = GADBannerView(adSize: adSize)
         bannerView.adUnitID = bannerAdUnitID
         bannerView.rootViewController = rootViewController
-        bannerView.load(makeRequest())
+        bannerView.delegate = delegate
         return bannerView
+    }
+
+    func loadBanner(_ bannerView: GADBannerView) {
+        bannerView.load(makeRequest())
     }
 
     private func loadRewardedAd() {
